@@ -356,6 +356,24 @@
     }
 
     .rp-th-date { text-align: left; padding-left: 20px; min-width: 110px; }
+    .rp-th-group {
+      background: #eff6ff;
+      color: var(--accent);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      border-bottom: 1px solid #bfdbfe;
+      padding: 9px 14px;
+    }
+    .rp-th-sub {
+      background: #f8fafc;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--muted);
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+    }
 
     .rp-tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
     .rp-tr:last-child { border-bottom: none; }
@@ -516,12 +534,16 @@
         <table class="rp-grid">
           <thead>
             <tr>
-              <th class="rp-th rp-th-date">Date</th>
-              <th class="rp-th">🗑<br><span>Garbage</span></th>
-              <th class="rp-th">⚡<br><span>Outage (hrs)</span></th>
-              <th class="rp-th">⚡<br><span>Outages (#)</span></th>
-              <th class="rp-th">💧<br><span>TDS (ppm)</span></th>
-              <th class="rp-th">💧<br><span>Visual</span></th>
+              <th class="rp-th rp-th-date" rowspan="2">Date</th>
+              <th class="rp-th" rowspan="2">🗑<br><span>Garbage Disposal</span></th>
+              <th class="rp-th rp-th-group" colspan="2">⚡ Power Outages</th>
+              <th class="rp-th rp-th-group" colspan="2">💧 Water Quality</th>
+            </tr>
+            <tr>
+              <th class="rp-th rp-th-sub">Hrs</th>
+              <th class="rp-th rp-th-sub">#</th>
+              <th class="rp-th rp-th-sub">TDS (ppm)</th>
+              <th class="rp-th rp-th-sub">Visual</th>
             </tr>
           </thead>
           <tbody id="report-tbody"></tbody>
