@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sector 40 Upkeep Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:      #f7f9fc;
+      --surface: #ffffff;
+      --card:    #ffffff;
+      --border:  #e2e8f0;
+      --accent:  #2563eb;
+      --accent2: #ea580c;
+      --accent3: #16a34a;
+      --danger:  #dc2626;
+      --warn:    #d97706;
+      --text:    #1e293b;
+      --muted:   #64748b;
+      --radius:  12px;
+      --shadow:  0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.05);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      padding-bottom: 60px;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 24px 32px 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .header-inner {
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    header h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.7rem;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    header h1 span { color: var(--accent); }
+
+    .header-meta {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 4px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-meta .dot {
+      width: 5px; height: 5px;
+      background: var(--border);
+      border-radius: 50%;
+    }
+
+    .live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: #dcfce7;
+      color: var(--accent3);
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+
+    .live-dot {
+      width: 6px; height: 6px;
+      background: var(--accent3);
+      border-radius: 50%;
+      animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+
+    /* ── Main ── */
+    main {
+      max-width: 900px;
+      margin: 32px auto;
+      padding: 0 20px;
+    }
+
+    /* ── Controls card ── */
+    .controls-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 24px;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+    }
+
+    .controls-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    .controls-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      flex: 1;
+      min-width: 140px;
+    }
+
+    .field label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.03em;
+    }
+
+    .field input[type="date"] {
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.92rem;
+      outline: none;
+      transition: border-color 0.2s;
+      width: 100%;
+    }
+
+    .field input[type="date"]:focus { border-color: var(--accent); }
+
+    .btn-primary {
+      padding: 11px 24px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+    .btn-primary:active { transform: scale(0.98); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-secondary {
+      padding: 11px 18px;
+      background: var(--surface);
+      color: var(--text);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* Quick range pills */
+    .quick-ranges {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .range-pill {
+      padding: 5px 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .range-pill:hover,
+    .range-pill.active {
+      background: #eff6ff;
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* ── Status ── */
+    #report-status {
+      text-align: center;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      margin-bottom: 16px;
+    }
+
+    #report-status.loading { color: var(--muted); }
+    #report-status.error   { background: #fef2f2; color: var(--danger); border: 1px solid #fecaca; }
+
+    /* ── Empty state ── */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+    }
+
+    .empty-state .empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
+    .empty-state h3 { font-size: 1rem; font-weight: 600; margin-bottom: 6px; color: var(--text); }
+    .empty-state p  { font-size: 0.85rem; }
+
+    /* ── Report output ── */
+    #report-output { display: none; }
+
+    .report-header {
+      margin-bottom: 20px;
+    }
+
+    .report-header h2 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.5rem;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .report-header .rp-sub {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    /* ── Summary tiles ── */
+    .summary-tiles {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .tile {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .tile-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .tile-value {
+      font-size: 1.6rem;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .tile-sub { font-size: 0.75rem; color: var(--muted); }
+
+    .tile-ok   .tile-value { color: var(--accent3); }
+    .tile-warn .tile-value { color: var(--warn); }
+    .tile-bad  .tile-value { color: var(--danger); }
+    .tile-info .tile-value { color: var(--accent); }
+
+    /* ── Grid table ── */
+    .table-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .table-title {
+      padding: 14px 20px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      background: #f8fafc;
+    }
+
+    .table-wrap { overflow-x: auto; }
+
+    table.rp-grid {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    .rp-th {
+      background: #f8fafc;
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 0.73rem;
+      letter-spacing: 0.04em;
+      text-align: center;
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    .rp-th span {
+      display: block;
+      font-size: 0.68rem;
+      font-weight: 400;
+      margin-top: 1px;
+    }
+
+    .rp-th-date { text-align: left; padding-left: 20px; min-width: 110px; }
+
+    .rp-tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
+    .rp-tr:last-child { border-bottom: none; }
+    .rp-tr:hover { background: #f8fafc; }
+
+    .rp-td {
+      padding: 12px 14px;
+      vertical-align: middle;
+      color: var(--text);
+    }
+
+    .rp-td-date {
+      font-weight: 600;
+      font-size: 0.85rem;
+      padding-left: 20px;
+      line-height: 1.5;
+      white-space: nowrap;
+    }
+
+    .rp-td-center { text-align: center; }
+
+    .rp-summary-row {
+      background: #eff6ff;
+      border-top: 2px solid var(--accent);
+    }
+
+    .rp-summary-row .rp-td { font-weight: 600; }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .badge-ok   { background: #dcfce7; color: #15803d; }
+    .badge-warn { background: #fef9c3; color: #a16207; }
+    .badge-bad  { background: #fee2e2; color: #b91c1c; }
+    .badge-info { background: #dbeafe; color: #1d4ed8; }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 24px;
+      font-size: 0.75rem;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      margin-top: 40px;
+    }
+
+    /* ── Spinner ── */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+
+    /* ── Print ── */
+    @media print {
+      body { background: #fff; }
+      .controls-card, footer { display: none !important; }
+      #report-output { display: block !important; }
+      .table-card { box-shadow: none; border: 1px solid #ccc; }
+      .rp-th { background: #f0f4f8; }
+      .rp-summary-row { background: #e8f0fe; }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      header { padding: 18px 16px; }
+      main   { padding: 0 12px; margin-top: 20px; }
+      header h1 { font-size: 1.3rem; }
+      .controls-row { flex-direction: column; }
+      .btn-primary, .btn-secondary { width: 100%; justify-content: center; }
+      .summary-tiles { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div>
+      <h1>Sector <span>40</span> Upkeep Tracker</h1>
+      <div class="header-meta">
+        <span>Noida, Uttar Pradesh</span>
+        <div class="dot"></div>
+        <span>Neighbourhood Upkeep Monitor</span>
+        <div class="dot"></div>
+        <span class="live-badge"><span class="live-dot"></span>Live Data</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-shrink:0;">
+      <button class="btn-secondary" onclick="downloadPDF()">⬇ PDF</button>
+      <button class="btn-secondary" onclick="copyLink()">🔗 Share</button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- Controls -->
+  <div class="controls-card">
+    <div class="controls-title">📆 Select Report Period</div>
+    <div class="controls-row">
+      <div class="field">
+        <label>Start Date</label>
+        <input type="date" id="report-start"/>
+      </div>
+      <div class="field">
+        <label>End Date</label>
+        <input type="date" id="report-end"/>
+      </div>
+      <button class="btn-primary" id="fetch-btn" onclick="generateReport()">Generate Report</button>
+    </div>
+    <div class="quick-ranges">
+      <span class="range-pill" onclick="setRange(7,  this)">Last 7 days</span>
+      <span class="range-pill" onclick="setRange(14, this)">Last 14 days</span>
+      <span class="range-pill" onclick="setRange(30, this)">Last 30 days</span>
+      <span class="range-pill" onclick="setThisWeek(this)">This week</span>
+      <span class="range-pill" onclick="setLastWeek(this)">Last week</span>
+    </div>
+  </div>
+
+  <!-- Status -->
+  <div id="report-status" style="display:none;"></div>
+
+  <!-- Empty state -->
+  <div class="empty-state" id="empty-state">
+    <div class="empty-icon">📋</div>
+    <h3>Select a date range to generate the report</h3>
+    <p>Data is pulled live from the Sector 40 tracking log.</p>
+  </div>
+
+  <!-- Report -->
+  <div id="report-output">
+
+    <div class="report-header">
+      <h2>Sector 40 Issues</h2>
+      <div class="rp-sub" id="rp-period"></div>
+    </div>
+
+    <!-- Summary tiles -->
+    <div class="summary-tiles" id="summary-tiles"></div>
+
+    <!-- Grid table -->
+    <div class="table-card">
+      <div class="table-title">📅 Daily Breakdown</div>
+      <div class="table-wrap">
+        <table class="rp-grid">
+          <thead>
+            <tr>
+              <th class="rp-th rp-th-date">Date</th>
+              <th class="rp-th">🗑<br><span>Garbage</span></th>
+              <th class="rp-th">⚡<br><span>Outage (hrs)</span></th>
+              <th class="rp-th">⚡<br><span>Outages (#)</span></th>
+              <th class="rp-th">💧<br><span>TDS (ppm)</span></th>
+              <th class="rp-th">💧<br><span>Visual</span></th>
+            </tr>
+          </thead>
+          <tbody id="report-tbody"></tbody>
+          <tfoot id="report-tfoot"></tfoot>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+</main>
+
+<footer>
+  Sector 40, Noida · Data updated daily · &copy; <span id="yr"></span>
+</footer>
+
+<script>
+// ══════════════════════════════════════════
+// CONFIG — paste your Apps Script URL here
+// ══════════════════════════════════════════
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx-51aoVIEIoWdcz6oWCaVaLk8Z0ii_Ny_PNgM4F7k_T7RzSWm_CHXn47-b03RKeUs/exec";
+
+// ── Init ──
+document.getElementById('yr').textContent = new Date().getFullYear();
+initDates();
+handleURLParams();
+
+function initDates() {
+  const today = new Date();
+  const fmt   = d => d.toISOString().split('T')[0];
+  const day   = today.getDay();
+  const sun   = new Date(today); sun.setDate(today.getDate() - day);
+  const sat   = new Date(sun);   sat.setDate(sun.getDate() + 6);
+  document.getElementById('report-start').value = fmt(sun);
+  document.getElementById('report-end').value   = fmt(sat);
+}
+
+// ── Quick range helpers ──
+function setRange(days, el) {
+  setActivePill(el);
+  const end   = new Date();
+  const start = new Date(); start.setDate(end.getDate() - days + 1);
+  document.getElementById('report-start').value = fmt(start);
+  document.getElementById('report-end').value   = fmt(end);
+}
+
+function setThisWeek(el) {
+  setActivePill(el);
+  const today = new Date();
+  const sun   = new Date(today); sun.setDate(today.getDate() - today.getDay());
+  const sat   = new Date(sun);   sat.setDate(sun.getDate() + 6);
+  document.getElementById('report-start').value = fmt(sun);
+  document.getElementById('report-end').value   = fmt(sat);
+}
+
+function setLastWeek(el) {
+  setActivePill(el);
+  const today = new Date();
+  const thisSun  = new Date(today); thisSun.setDate(today.getDate() - today.getDay());
+  const lastSun  = new Date(thisSun); lastSun.setDate(thisSun.getDate() - 7);
+  const lastSat  = new Date(lastSun); lastSat.setDate(lastSun.getDate() + 6);
+  document.getElementById('report-start').value = fmt(lastSun);
+  document.getElementById('report-end').value   = fmt(lastSat);
+}
+
+function setActivePill(el) {
+  document.querySelectorAll('.range-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ── Generate report ──
+async function generateReport() {
+  const start = document.getElementById('report-start').value;
+  const end   = document.getElementById('report-end').value;
+  if (!start || !end) { showStatus('error', 'Please select a start and end date.'); return; }
+  if (start > end)    { showStatus('error', 'Start date must be before end date.'); return; }
+
+  const btn = document.getElementById('fetch-btn');
+  btn.disabled = true;
+  showStatus('loading', '<span class="spinner"></span>Fetching data from Google Sheet…');
+  document.getElementById('empty-state').style.display   = 'none';
+  document.getElementById('report-output').style.display = 'none';
+
+  try {
+    const url  = APPS_SCRIPT_URL + '?action=report&start=' + encodeURIComponent(start) + '&end=' + encodeURIComponent(end);
+    const res  = await fetch(url);
+    const data = await res.json();
+    renderReport(data, start, end);
+    hideStatus();
+  } catch(e) {
+    showStatus('error', '⚠ Could not fetch data. The tracker may be temporarily unavailable.');
+    document.getElementById('empty-state').style.display = 'block';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ── Render ──
+function renderReport(rows, start, end) {
+  if (!rows || rows.length === 0) {
+    showStatus('error', 'No data found for this period.');
+    document.getElementById('empty-state').style.display = 'block';
+    return;
+  }
+
+  document.getElementById('rp-period').textContent =
+    'Reporting Period: ' + formatDate(start) + ' — ' + formatDate(end) +
+    '  ·  ' + rows.length + ' day' + (rows.length !== 1 ? 's' : '') + ' of data';
+
+  // ── Summary tiles ──
+  const totalGarbageMissed = rows.filter(r => r.garbage !== 'Yes').length;
+  const totalOutageHrs     = parseFloat(rows.reduce((s,r) => s + (parseFloat(r.elec_hours)||0), 0).toFixed(2));
+  const totalOutages       = rows.reduce((s,r) => s + (parseInt(r.elec_count)||0), 0);
+  const dirtyDays          = rows.filter(r => r.water_dirty === 'Yes').length;
+  const tdsReadings        = rows.filter(r => r.water_tds && parseInt(r.water_tds) > 0);
+  const avgTDS             = tdsReadings.length
+    ? Math.round(tdsReadings.reduce((s,r) => s + parseInt(r.water_tds), 0) / tdsReadings.length)
+    : null;
+
+  const garbageOk = totalGarbageMissed === 0;
+  const outageOk  = totalOutageHrs === 0;
+  const waterOk   = dirtyDays === 0;
+  const tdsOk     = avgTDS === null || avgTDS <= 300;
+
+  document.getElementById('summary-tiles').innerHTML = `
+    <div class="tile ${garbageOk ? 'tile-ok' : 'tile-bad'}">
+      <div class="tile-label">🗑 Garbage</div>
+      <div class="tile-value">${rows.length - totalGarbageMissed}/${rows.length}</div>
+      <div class="tile-sub">${garbageOk ? 'All collections done' : totalGarbageMissed + ' day(s) missed'}</div>
+    </div>
+    <div class="tile ${outageOk ? 'tile-ok' : totalOutageHrs >= 8 ? 'tile-bad' : 'tile-warn'}">
+      <div class="tile-label">⚡ Power Outages</div>
+      <div class="tile-value">${totalOutageHrs}</div>
+      <div class="tile-sub">${totalOutages} outage${totalOutages !== 1 ? 's' : ''} · hrs total</div>
+    </div>
+    <div class="tile ${tdsOk ? 'tile-ok' : avgTDS > 500 ? 'tile-bad' : 'tile-warn'}">
+      <div class="tile-label">💧 Avg TDS</div>
+      <div class="tile-value">${avgTDS !== null ? avgTDS : '—'}</div>
+      <div class="tile-sub">${avgTDS !== null ? 'ppm · ' + (avgTDS <= 300 ? 'Acceptable' : avgTDS <= 500 ? 'Marginal' : 'High') : 'No readings'}</div>
+    </div>
+    <div class="tile ${waterOk ? 'tile-ok' : 'tile-bad'}">
+      <div class="tile-label">💧 Dirty Water</div>
+      <div class="tile-value">${dirtyDays}</div>
+      <div class="tile-sub">day${dirtyDays !== 1 ? 's' : ''} with discolouration</div>
+    </div>
+  `;
+
+  // ── Daily rows ──
+  let tbody = '';
+  rows.forEach(r => {
+    const tds = parseInt(r.water_tds) || 0;
+    const hrs = parseFloat(r.elec_hours) || 0;
+
+    tbody += `<tr class="rp-tr">
+      <td class="rp-td rp-td-date">${formatDateShort(r.date)}</td>
+      <td class="rp-td rp-td-center">
+        ${r.garbage === 'Yes'
+          ? '<span class="badge badge-ok">✓ Done</span>'
+          : '<span class="badge badge-bad">✗ Missed</span>'}
+      </td>
+      <td class="rp-td rp-td-center">
+        ${hrs === 0
+          ? '<span class="badge badge-ok">—</span>'
+          : hrs >= 4
+            ? `<span class="badge badge-bad">${hrs}</span>`
+            : `<span class="badge badge-warn">${hrs}</span>`}
+      </td>
+      <td class="rp-td rp-td-center">
+        <span style="font-weight:500;color:var(--text)">${r.elec_count || 0}</span>
+      </td>
+      <td class="rp-td rp-td-center">
+        ${tds === 0
+          ? '<span class="badge badge-info">—</span>'
+          : tds > 500
+            ? `<span class="badge badge-bad">${tds} ⚠</span>`
+            : tds > 300
+              ? `<span class="badge badge-warn">${tds}</span>`
+              : `<span class="badge badge-ok">${tds}</span>`}
+      </td>
+      <td class="rp-td rp-td-center">
+        ${r.water_dirty === 'Yes'
+          ? '<span class="badge badge-bad">Dirty</span>'
+          : '<span class="badge badge-ok">Clear</span>'}
+      </td>
+    </tr>`;
+  });
+
+  document.getElementById('report-tbody').innerHTML = tbody;
+
+  // ── Summary row ──
+  document.getElementById('report-tfoot').innerHTML = `
+    <tr class="rp-summary-row">
+      <td class="rp-td rp-td-date" style="color:var(--accent)">Summary</td>
+      <td class="rp-td rp-td-center">
+        <span class="badge ${totalGarbageMissed > 0 ? 'badge-bad' : 'badge-ok'}">${totalGarbageMissed} missed</span>
+      </td>
+      <td class="rp-td rp-td-center">
+        <span class="badge ${totalOutageHrs >= 4 ? 'badge-bad' : totalOutageHrs > 0 ? 'badge-warn' : 'badge-ok'}">${totalOutageHrs} hrs</span>
+      </td>
+      <td class="rp-td rp-td-center" style="font-weight:700">${totalOutages}</td>
+      <td class="rp-td rp-td-center">
+        ${avgTDS !== null
+          ? `<span class="badge ${avgTDS > 500 ? 'badge-bad' : avgTDS > 300 ? 'badge-warn' : 'badge-ok'}">${avgTDS} avg</span>`
+          : '—'}
+      </td>
+      <td class="rp-td rp-td-center">
+        <span class="badge ${dirtyDays > 0 ? 'badge-bad' : 'badge-ok'}">${dirtyDays} day(s)</span>
+      </td>
+    </tr>`;
+
+  document.getElementById('report-output').style.display = 'block';
+}
+
+// ── PDF ──
+async function downloadPDF() {
+  if (document.getElementById('report-output').style.display === 'none') {
+    await generateReport();
+    await new Promise(r => setTimeout(r, 400));
+  }
+  window.print();
+}
+
+// ── Share link ──
+function copyLink() {
+  const start = document.getElementById('report-start').value;
+  const end   = document.getElementById('report-end').value;
+  const url   = window.location.href.split('?')[0] + '?start=' + start + '&end=' + end;
+  navigator.clipboard.writeText(url).then(() => {
+    const btn = document.querySelector('[onclick="copyLink()"]');
+    const orig = btn.innerHTML;
+    btn.innerHTML = '✓ Copied!';
+    btn.style.color = 'var(--accent3)';
+    btn.style.borderColor = 'var(--accent3)';
+    setTimeout(() => { btn.innerHTML = orig; btn.style.color = ''; btn.style.borderColor = ''; }, 2000);
+  });
+}
+
+// ── URL params (shareable links) ──
+function handleURLParams() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('start')) document.getElementById('report-start').value = params.get('start');
+  if (params.get('end'))   document.getElementById('report-end').value   = params.get('end');
+  if (params.get('start') && params.get('end')) generateReport();
+}
+
+// ── Helpers ──
+function showStatus(type, msg) {
+  const el = document.getElementById('report-status');
+  el.className = type;
+  el.innerHTML = msg;
+  el.style.display = 'block';
+}
+
+function hideStatus() {
+  const el = document.getElementById('report-status');
+  el.style.display = 'none';
+}
+
+function fmt(d) { return d.toISOString().split('T')[0]; }
+
+function formatDate(d) {
+  if (!d) return '—';
+  const [y,m,day] = d.split('-');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const days   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const dt     = new Date(y, m-1, day);
+  return `${days[dt.getDay()]}, ${parseInt(day)} ${months[m-1]} ${y}`;
+}
+
+function formatDateShort(d) {
+  if (!d) return '—';
+  const [y,m,day] = d.split('-');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const days   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const dt     = new Date(y, m-1, day);
+  return `${days[dt.getDay()]}<br><span style="font-size:0.8em;color:var(--muted);font-weight:400">${parseInt(day)} ${months[m-1]}</span>`;
+}
+</script>
+
+</body>
+</html>
