@@ -538,12 +538,15 @@
               <th class="rp-th" rowspan="2">🗑<br><span>Garbage Disposal</span></th>
               <th class="rp-th rp-th-group" colspan="2">⚡ Power Outages</th>
               <th class="rp-th rp-th-group" colspan="2">💧 Water Quality</th>
+              <th class="rp-th rp-th-group" colspan="2">🌬️ Air Quality</th>
             </tr>
             <tr>
               <th class="rp-th rp-th-sub">Hrs</th>
               <th class="rp-th rp-th-sub">No. of Times</th>
               <th class="rp-th rp-th-sub">TDS (ppm)</th>
               <th class="rp-th rp-th-sub">Visual</th>
+              <th class="rp-th rp-th-sub">AQI</th>
+              <th class="rp-th rp-th-sub">PM2.5 (µg/m³)</th>
             </tr>
           </thead>
           <tbody id="report-tbody"></tbody>
@@ -663,6 +666,15 @@ function renderReport(rows, start, end) {
     ? Math.round(tdsReadings.reduce((s,r) => s + parseInt(r.water_tds), 0) / tdsReadings.length)
     : null;
 
+  const aqiReadings  = rows.filter(r => r.aq_aqi  && parseInt(r.aq_aqi)  > 0);
+  const pm25Readings = rows.filter(r => r.aq_pm25 && parseFloat(r.aq_pm25) > 0);
+  const avgAQI  = aqiReadings.length
+    ? Math.round(aqiReadings.reduce((s,r) => s + parseInt(r.aq_aqi), 0) / aqiReadings.length)
+    : null;
+  const avgPM25 = pm25Readings.length
+    ? parseFloat((pm25Readings.reduce((s,r) => s + parseFloat(r.aq_pm25), 0) / pm25Readings.length).toFixed(1))
+    : null;
+
   const garbageOk = totalGarbageMissed === 0;
   const outageOk  = totalOutageHrs === 0;
   const waterOk   = dirtyDays === 0;
@@ -688,6 +700,16 @@ function renderReport(rows, start, end) {
       <div class="tile-label">💧 Dirty Water</div>
       <div class="tile-value">${dirtyDays}</div>
       <div class="tile-sub">day${dirtyDays !== 1 ? 's' : ''} with discolouration</div>
+    </div>
+    <div class="tile ${avgAQI === null ? 'tile-info' : avgAQI <= 50 ? 'tile-ok' : avgAQI <= 100 ? 'tile-warn' : 'tile-bad'}">
+      <div class="tile-label">🌬️ Avg AQI</div>
+      <div class="tile-value">${avgAQI !== null ? avgAQI : '—'}</div>
+      <div class="tile-sub">${avgAQI !== null ? (avgAQI <= 50 ? 'Good' : avgAQI <= 100 ? 'Satisfactory' : avgAQI <= 200 ? 'Moderate' : avgAQI <= 300 ? 'Poor' : 'Very Poor') : 'No readings'}</div>
+    </div>
+    <div class="tile ${avgPM25 === null ? 'tile-info' : avgPM25 <= 30 ? 'tile-ok' : avgPM25 <= 60 ? 'tile-warn' : 'tile-bad'}">
+      <div class="tile-label">🌬️ Avg PM2.5</div>
+      <div class="tile-value">${avgPM25 !== null ? avgPM25 : '—'}</div>
+      <div class="tile-sub">${avgPM25 !== null ? 'µg/m³ · ' + (avgPM25 <= 30 ? 'Acceptable' : avgPM25 <= 60 ? 'Moderate' : 'High') : 'No readings'}</div>
     </div>
   `;
 
@@ -728,6 +750,24 @@ function renderReport(rows, start, end) {
           ? '<span class="badge badge-bad">Dirty</span>'
           : '<span class="badge badge-ok">Clear</span>'}
       </td>
+      <td class="rp-td rp-td-center">
+        ${!r.aq_aqi || parseInt(r.aq_aqi) === 0
+          ? '<span class="badge badge-info">—</span>'
+          : parseInt(r.aq_aqi) <= 50
+            ? `<span class="badge badge-ok">${r.aq_aqi}</span>`
+            : parseInt(r.aq_aqi) <= 100
+              ? `<span class="badge badge-warn">${r.aq_aqi}</span>`
+              : `<span class="badge badge-bad">${r.aq_aqi}</span>`}
+      </td>
+      <td class="rp-td rp-td-center">
+        ${!r.aq_pm25 || parseFloat(r.aq_pm25) === 0
+          ? '<span class="badge badge-info">—</span>'
+          : parseFloat(r.aq_pm25) <= 30
+            ? `<span class="badge badge-ok">${r.aq_pm25}</span>`
+            : parseFloat(r.aq_pm25) <= 60
+              ? `<span class="badge badge-warn">${r.aq_pm25}</span>`
+              : `<span class="badge badge-bad">${r.aq_pm25}</span>`}
+      </td>
     </tr>`;
   });
 
@@ -751,6 +791,16 @@ function renderReport(rows, start, end) {
       </td>
       <td class="rp-td rp-td-center">
         <span class="badge ${dirtyDays > 0 ? 'badge-bad' : 'badge-ok'}">${dirtyDays} day(s)</span>
+      </td>
+      <td class="rp-td rp-td-center">
+        ${avgAQI !== null
+          ? `<span class="badge ${avgAQI <= 50 ? 'badge-ok' : avgAQI <= 100 ? 'badge-warn' : 'badge-bad'}">${avgAQI} avg</span>`
+          : '—'}
+      </td>
+      <td class="rp-td rp-td-center">
+        ${avgPM25 !== null
+          ? `<span class="badge ${avgPM25 <= 30 ? 'badge-ok' : avgPM25 <= 60 ? 'badge-warn' : 'badge-bad'}">${avgPM25} avg</span>`
+          : '—'}
       </td>
     </tr>`;
 
