@@ -827,6 +827,9 @@ function renderReport(rows, start, end) {
   // ── Daily rows ──
   let tbody = '';
   rows.forEach(r => {
+    // DEBUG — remove after confirming reasons show correctly
+    console.log('Row', r.date, '| garbage:', r.garbage, '| garbage_reason:', r.garbage_reason, '| elec_slot_reasons:', r.elec_slot_reasons);
+
     const tds = parseInt(r.water_tds) || 0;
     const hrs = parseFloat(r.elec_hours) || 0;
     const count = parseInt(r.elec_count) || 0;
@@ -837,7 +840,7 @@ function renderReport(rows, start, end) {
     if (r.garbage === 'Yes') {
       garbageCell = `<td class="rp-td rp-td-center"><span class="badge badge-ok">✓ Done</span></td>`;
     } else {
-      const reason = (r.garbage_reason || '').trim();
+      const reason = String(r.garbage_reason || '').trim();
       if (reason) {
         const gid = 'greason-' + dateKey;
         garbageCell = `
@@ -860,14 +863,30 @@ function renderReport(rows, start, end) {
     // ── Slots cell with per-slot expandable reasons ──
     let slotsCell = '<td class="rp-td rp-td-center">—</td>';
     if (r.elec_slots && r.elec_slots.trim()) {
-      const slots   = r.elec_slots.split(',').map(s => s.trim()).filter(Boolean);
-      // outage_slot_reasons is comma-separated, one per slot (may be fewer than slots)
-      const reasons = (r.elec_slot_reasons || '').split(',').map(s => s.trim());
-      const uid     = 'slots-' + dateKey;
-      const hasAnyReason = reasons.some(rr => rr.length > 0);
+      const slots = r.elec_slots.split(',').map(s => s.trim()).filter(Boolean);
+      const uid   = 'slots-' + dateKey;
 
-      const pills = slots.map((s, i) => {
-        const slotReason = reasons[i] || '';
+      // Reasons are pipe-separated: "09:00–09:30: Reason one | 18:15–18:55: Reason two"
+      // Build a lookup map keyed by start time
+      const reasonMap = {};
+      if (r.elec_slot_reasons && r.elec_slot_reasons.trim()) {
+        r.elec_slot_reasons.split('|').forEach(part => {
+          const colonIdx = part.indexOf(':');
+          if (colonIdx !== -1) {
+            // key = everything before first colon (the time range or start time), trimmed
+            const key = part.substring(0, colonIdx).trim();
+            const val = part.substring(colonIdx + 1).trim();
+            if (key && val) reasonMap[key] = val;
+          }
+        });
+      }
+
+      const hasAnyReason = Object.keys(reasonMap).length > 0;
+
+      const pills = slots.map(s => {
+        // Try to match by slot string or by start-time prefix
+        const startTime = s.split('–')[0].trim();
+        const slotReason = reasonMap[s] || reasonMap[startTime] || '';
         if (slotReason) {
           return `<div>
             <span class="slot-pill">${s}</span>
