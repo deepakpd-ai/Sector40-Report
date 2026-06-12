@@ -41,7 +41,7 @@
     }
 
     .header-inner {
-      max-width: 1200px;
+      max-width: 1400px;
       margin: 0 auto;
       display: flex;
       align-items: flex-end;
@@ -100,9 +100,9 @@
 
     /* ── Main ── */
     main {
-      max-width: 1200px;
+      max-width: 1400px;
       margin: 32px auto;
-      padding: 0 16px;
+      padding: 0 24px;
     }
 
     /* ── Controls card ── */
@@ -356,6 +356,16 @@
     }
 
     .rp-th-date { text-align: left; padding-left: 16px; min-width: 90px; }
+
+    /* Column width hints — let table compress without overflow */
+    .col-garbage  { min-width: 90px;  width: 10%; }
+    .col-hrs      { min-width: 56px;  width: 7%;  }
+    .col-count    { min-width: 56px;  width: 7%;  }
+    .col-slots    { min-width: 110px; width: 13%; }
+    .col-tds      { min-width: 70px;  width: 8%;  }
+    .col-visual   { min-width: 70px;  width: 8%;  }
+    .col-aqi      { min-width: 70px;  width: 8%;  }
+    .col-pm25     { min-width: 80px;  width: 9%;  }
     .rp-th-group {
       background: #eff6ff;
       color: var(--accent);
@@ -643,19 +653,19 @@
           <thead>
             <tr>
               <th class="rp-th rp-th-date" rowspan="2">Date</th>
-              <th class="rp-th" rowspan="2">🗑<br><span>Garbage Disposal</span></th>
+              <th class="rp-th col-garbage" rowspan="2">🗑<br><span>Garbage Disposal</span></th>
               <th class="rp-th rp-th-group" colspan="3">⚡ Power Outages</th>
               <th class="rp-th rp-th-group" colspan="2">💧 Water Quality</th>
               <th class="rp-th rp-th-group" colspan="2">🌬️ Air Quality</th>
             </tr>
             <tr>
-              <th class="rp-th rp-th-sub">Hrs</th>
-              <th class="rp-th rp-th-sub">No. of Times</th>
-              <th class="rp-th rp-th-sub">Slots</th>
-              <th class="rp-th rp-th-sub">TDS (ppm)</th>
-              <th class="rp-th rp-th-sub">Visual</th>
-              <th class="rp-th rp-th-sub">AQI</th>
-              <th class="rp-th rp-th-sub">PM2.5 (µg/m³)</th>
+              <th class="rp-th rp-th-sub col-hrs">Hrs</th>
+              <th class="rp-th rp-th-sub col-count">No. of Times</th>
+              <th class="rp-th rp-th-sub col-slots">Slots</th>
+              <th class="rp-th rp-th-sub col-tds">TDS (ppm)</th>
+              <th class="rp-th rp-th-sub col-visual">Visual</th>
+              <th class="rp-th rp-th-sub col-aqi">AQI</th>
+              <th class="rp-th rp-th-sub col-pm25">PM2.5 (µg/m³)</th>
             </tr>
           </thead>
           <tbody id="report-tbody"></tbody>
