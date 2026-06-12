@@ -872,15 +872,15 @@ function renderReport(rows, start, end) {
       const reasonMap = {};
       const normDash = s => s.replace(/[\u2013\u2014\u2012\-]/g, '–');
       if (r.elec_slot_reasons && r.elec_slot_reasons.trim()) {
+        console.log('RAW elec_slot_reasons:', JSON.stringify(r.elec_slot_reasons));
         r.elec_slot_reasons.split('|').forEach(part => {
           part = part.trim();
-          // Match pattern: "HH:MM–HH:MM: reason" or "HH:MM-HH:MM: reason"
           const m = part.match(/^(\d{1,2}:\d{2}\s*[–\-\u2013\u2014]\s*\d{1,2}:\d{2})\s*:\s*(.+)$/);
+          console.log('Part:', JSON.stringify(part), '→ match:', m ? [m[1], m[2]] : 'NO MATCH');
           if (m) {
             const key = normDash(m[1].trim());
             const val = m[2].trim();
             reasonMap[key] = val;
-            // Also index by start time alone as fallback
             const startKey = key.split('–')[0].trim();
             if (!reasonMap[startKey]) reasonMap[startKey] = val;
           }
