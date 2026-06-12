@@ -837,7 +837,7 @@ function renderReport(rows, start, end) {
     if (r.garbage === 'Yes') {
       garbageCell = `<td class="rp-td rp-td-center"><span class="badge badge-ok">✓ Done</span></td>`;
     } else {
-      const reason = (r.garbage_miss_reason || '').trim();
+      const reason = (r.garbage_reason || '').trim();
       if (reason) {
         const gid = 'greason-' + dateKey;
         garbageCell = `
@@ -862,7 +862,7 @@ function renderReport(rows, start, end) {
     if (r.elec_slots && r.elec_slots.trim()) {
       const slots   = r.elec_slots.split(',').map(s => s.trim()).filter(Boolean);
       // outage_slot_reasons is comma-separated, one per slot (may be fewer than slots)
-      const reasons = (r.outage_slot_reasons || '').split(',').map(s => s.trim());
+      const reasons = (r.elec_slot_reasons || '').split(',').map(s => s.trim());
       const uid     = 'slots-' + dateKey;
       const hasAnyReason = reasons.some(rr => rr.length > 0);
 
