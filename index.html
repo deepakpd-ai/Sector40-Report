@@ -867,16 +867,22 @@ function renderReport(rows, start, end) {
       const uid   = 'slots-' + dateKey;
 
       // Reasons are pipe-separated: "09:00–09:30: Reason one | 18:15–18:55: Reason two"
-      // Build a lookup map keyed by start time
+      // Each part has format "HH:MM–HH:MM: reason text"
+      // Split on ": " after the time range (first ": " that follows a closing time)
       const reasonMap = {};
+      const normDash = s => s.replace(/[\u2013\u2014\u2012\-]/g, '–');
       if (r.elec_slot_reasons && r.elec_slot_reasons.trim()) {
         r.elec_slot_reasons.split('|').forEach(part => {
-          const colonIdx = part.indexOf(':');
-          if (colonIdx !== -1) {
-            // key = everything before first colon (the time range or start time), trimmed
-            const key = part.substring(0, colonIdx).trim();
-            const val = part.substring(colonIdx + 1).trim();
-            if (key && val) reasonMap[key] = val;
+          part = part.trim();
+          // Match pattern: "HH:MM–HH:MM: reason" or "HH:MM-HH:MM: reason"
+          const m = part.match(/^(\d{1,2}:\d{2}\s*[–\-\u2013\u2014]\s*\d{1,2}:\d{2})\s*:\s*(.+)$/);
+          if (m) {
+            const key = normDash(m[1].trim());
+            const val = m[2].trim();
+            reasonMap[key] = val;
+            // Also index by start time alone as fallback
+            const startKey = key.split('–')[0].trim();
+            if (!reasonMap[startKey]) reasonMap[startKey] = val;
           }
         });
       }
@@ -884,9 +890,9 @@ function renderReport(rows, start, end) {
       const hasAnyReason = Object.keys(reasonMap).length > 0;
 
       const pills = slots.map(s => {
-        // Try to match by slot string or by start-time prefix
-        const startTime = s.split('–')[0].trim();
-        const slotReason = reasonMap[s] || reasonMap[startTime] || '';
+        const normS     = normDash(s);
+        const startTime = normS.split('–')[0].trim();
+        const slotReason = reasonMap[normS] || reasonMap[startTime] || '';
         if (slotReason) {
           return `<div>
             <span class="slot-pill">${s}</span>
