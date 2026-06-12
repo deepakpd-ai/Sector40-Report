@@ -453,6 +453,63 @@
       text-align: center;
     }
 
+    /* ── Reason expand panel (garbage miss & outage slots) ── */
+    .reason-cell { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+
+    .reason-expand-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #b91c1c;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+    .reason-expand-btn:hover { background: #fee2e2; }
+    .reason-expand-btn.open .outage-chevron { transform: rotate(180deg); }
+
+    .reason-panel {
+      display: none;
+      flex-direction: column;
+      gap: 4px;
+      width: 100%;
+      margin-top: 2px;
+    }
+    .reason-panel.visible { display: flex; }
+
+    .reason-text {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #7f1d1d;
+      border-radius: 6px;
+      padding: 5px 8px;
+      font-size: 0.72rem;
+      font-weight: 400;
+      line-height: 1.4;
+      text-align: left;
+      word-break: break-word;
+    }
+
+    .slot-reason-note {
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      border-top: none;
+      color: #7c2d12;
+      border-radius: 0 0 6px 6px;
+      padding: 3px 8px;
+      font-size: 0.68rem;
+      font-style: italic;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+
     /* ── Badges ── */
     .badge {
       display: inline-block;
@@ -773,18 +830,58 @@ function renderReport(rows, start, end) {
     const tds = parseInt(r.water_tds) || 0;
     const hrs = parseFloat(r.elec_hours) || 0;
     const count = parseInt(r.elec_count) || 0;
+    const dateKey = r.date.replace(/-/g,'');
 
-    // Build slots cell
+    // ── Garbage cell with expandable miss reason ──
+    let garbageCell;
+    if (r.garbage === 'Yes') {
+      garbageCell = `<td class="rp-td rp-td-center"><span class="badge badge-ok">✓ Done</span></td>`;
+    } else {
+      const reason = (r.garbage_miss_reason || '').trim();
+      if (reason) {
+        const gid = 'greason-' + dateKey;
+        garbageCell = `
+          <td class="rp-td rp-td-center">
+            <div class="reason-cell">
+              <span class="badge badge-bad">✗ Missed</span>
+              <button class="reason-expand-btn" onclick="togglePanel('${gid}',this)" aria-expanded="false">
+                Why? <span class="outage-chevron">▼</span>
+              </button>
+              <div class="reason-panel" id="${gid}">
+                <div class="reason-text">${reason}</div>
+              </div>
+            </div>
+          </td>`;
+      } else {
+        garbageCell = `<td class="rp-td rp-td-center"><span class="badge badge-bad">✗ Missed</span></td>`;
+      }
+    }
+
+    // ── Slots cell with per-slot expandable reasons ──
     let slotsCell = '<td class="rp-td rp-td-center">—</td>';
     if (r.elec_slots && r.elec_slots.trim()) {
-      const slots = r.elec_slots.split(',').map(s => s.trim()).filter(Boolean);
-      const uid   = 'slots-' + r.date.replace(/-/g,'');
-      const pills = slots.map(s => `<span class="slot-pill">${s}</span>`).join('');
+      const slots   = r.elec_slots.split(',').map(s => s.trim()).filter(Boolean);
+      // outage_slot_reasons is comma-separated, one per slot (may be fewer than slots)
+      const reasons = (r.outage_slot_reasons || '').split(',').map(s => s.trim());
+      const uid     = 'slots-' + dateKey;
+      const hasAnyReason = reasons.some(rr => rr.length > 0);
+
+      const pills = slots.map((s, i) => {
+        const slotReason = reasons[i] || '';
+        if (slotReason) {
+          return `<div>
+            <span class="slot-pill">${s}</span>
+            <div class="slot-reason-note">↳ ${slotReason}</div>
+          </div>`;
+        }
+        return `<span class="slot-pill">${s}</span>`;
+      }).join('');
+
       slotsCell = `
         <td class="rp-td rp-td-center">
           <div class="outage-cell">
             <button class="outage-expand-btn" onclick="toggleSlots('${uid}',this)" aria-expanded="false">
-              ${slots.length} slot${slots.length !== 1 ? 's' : ''} <span class="outage-chevron">▼</span>
+              ${slots.length} slot${slots.length !== 1 ? 's' : ''}${hasAnyReason ? ' + reasons' : ''} <span class="outage-chevron">▼</span>
             </button>
             <div class="outage-slots" id="${uid}">${pills}</div>
           </div>
@@ -793,11 +890,7 @@ function renderReport(rows, start, end) {
 
     tbody += `<tr class="rp-tr">
       <td class="rp-td rp-td-date">${formatDateShort(r.date)}</td>
-      <td class="rp-td rp-td-center">
-        ${r.garbage === 'Yes'
-          ? '<span class="badge badge-ok">✓ Done</span>'
-          : '<span class="badge badge-bad">✗ Missed</span>'}
-      </td>
+      ${garbageCell}
       <td class="rp-td rp-td-center">
         ${hrs === 0
           ? '<span class="badge badge-ok">—</span>'
@@ -907,6 +1000,14 @@ function copyLink() {
 
 // ── Toggle outage slots ──
 function toggleSlots(id, btn) {
+  const panel = document.getElementById(id);
+  const open  = panel.classList.toggle('visible');
+  btn.classList.toggle('open', open);
+  btn.setAttribute('aria-expanded', open);
+}
+
+// ── Toggle reason panel (garbage miss / other) ──
+function togglePanel(id, btn) {
   const panel = document.getElementById(id);
   const open  = panel.classList.toggle('visible');
   btn.classList.toggle('open', open);
