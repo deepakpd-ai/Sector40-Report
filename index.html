@@ -1000,14 +1000,19 @@ function renderReport(rows, start, end) {
 
     // ── Dirty water photo thumbnail ──
     let photoCell = '<td class="rp-td rp-td-center">—</td>';
-    if (r.water_dirty_image && r.water_dirty_image.trim()) {
-      const src = r.water_dirty_image.startsWith('data:')
-        ? r.water_dirty_image
-        : 'data:image/jpeg;base64,' + r.water_dirty_image;
+    if (r.water_dirty_image && String(r.water_dirty_image).trim()) {
+      const rawImg = String(r.water_dirty_image).trim();
+      const src = rawImg.startsWith('data:')
+        ? rawImg
+        : 'data:image/jpeg;base64,' + rawImg;
       photoCell = `
         <td class="rp-td rp-td-center">
-          <img class="water-thumb" src="${src}" alt="Water sample" onclick="openLightbox('${src}')"/>
+          <img class="water-thumb" src="${src}" alt="Water sample"
+               onclick="openLightbox(this.src)"
+               onerror="this.outerHTML='<span style=&quot;color:#dc2626;font-size:0.65rem;&quot;>load failed (len ${rawImg.length})</span>'"/>
         </td>`;
+    } else {
+      photoCell = `<td class="rp-td rp-td-center"><span style="color:#94a3b8;font-size:0.65rem;">no data (${typeof r.water_dirty_image})</span></td>`;
     }
 
     tbody += `<tr class="rp-tr">
