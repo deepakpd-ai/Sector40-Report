@@ -366,6 +366,53 @@
     .col-visual   { min-width: 70px;  width: 8%;  }
     .col-aqi      { min-width: 70px;  width: 8%;  }
     .col-pm25     { min-width: 80px;  width: 9%;  }
+    .col-pressure { min-width: 80px;  width: 8%;  }
+    .col-image    { min-width: 60px;  width: 6%;  }
+
+    /* ── Dirty water image thumbnail + lightbox ── */
+    .water-thumb {
+      width: 36px;
+      height: 36px;
+      border-radius: 6px;
+      object-fit: cover;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      display: block;
+      margin: 0 auto;
+      transition: transform 0.15s;
+    }
+    .water-thumb:hover { transform: scale(1.08); }
+
+    .img-lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.82);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .img-lightbox.visible { display: flex; }
+
+    .img-lightbox img {
+      max-width: min(90vw, 600px);
+      max-height: 85vh;
+      border-radius: 10px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+    }
+
+    .img-lightbox-close {
+      position: absolute;
+      top: 20px;
+      right: 24px;
+      color: #fff;
+      font-size: 1.8rem;
+      background: none;
+      border: none;
+      cursor: pointer;
+      line-height: 1;
+    }
     .rp-th-group {
       background: #eff6ff;
       color: var(--accent);
@@ -655,7 +702,7 @@
               <th class="rp-th rp-th-date" rowspan="2">Date</th>
               <th class="rp-th col-garbage" rowspan="2">🗑<br><span>Garbage Disposal</span></th>
               <th class="rp-th rp-th-group" colspan="3">⚡ Power Outages</th>
-              <th class="rp-th rp-th-group" colspan="2">💧 Water Quality</th>
+              <th class="rp-th rp-th-group" colspan="4">💧 Water Quality</th>
               <th class="rp-th rp-th-group" colspan="2">🌬️ Air Quality</th>
             </tr>
             <tr>
@@ -664,6 +711,8 @@
               <th class="rp-th rp-th-sub col-slots">Slots</th>
               <th class="rp-th rp-th-sub col-tds">TDS (ppm)</th>
               <th class="rp-th rp-th-sub col-visual">Visual</th>
+              <th class="rp-th rp-th-sub col-pressure">Pressure</th>
+              <th class="rp-th rp-th-sub col-image">Photo</th>
               <th class="rp-th rp-th-sub col-aqi">AQI</th>
               <th class="rp-th rp-th-sub col-pm25">PM2.5 (µg/m³)</th>
             </tr>
@@ -782,6 +831,7 @@ function renderReport(rows, start, end) {
   const totalOutageHrs     = parseFloat(rows.reduce((s,r) => s + (parseFloat(r.elec_hours)||0), 0).toFixed(2));
   const totalOutages       = rows.reduce((s,r) => s + (parseInt(r.elec_count)||0), 0);
   const dirtyDays          = rows.filter(r => r.water_dirty === 'Yes').length;
+  const lowPressureDays    = rows.filter(r => r.water_pressure_low === 'Yes').length;
   const tdsReadings        = rows.filter(r => r.water_tds && parseInt(r.water_tds) > 0);
   const avgTDS             = tdsReadings.length
     ? Math.round(tdsReadings.reduce((s,r) => s + parseInt(r.water_tds), 0) / tdsReadings.length)
@@ -923,6 +973,43 @@ function renderReport(rows, start, end) {
         </td>`;
     }
 
+    // ── Water Pressure cell with expandable reason ──
+    let pressureCell;
+    if (r.water_pressure_low === 'Yes') {
+      const pReason = String(r.water_pressure_reason || '').trim();
+      if (pReason) {
+        const pid = 'preason-' + dateKey;
+        pressureCell = `
+          <td class="rp-td rp-td-center">
+            <div class="reason-cell">
+              <span class="badge badge-warn">Low</span>
+              <button class="reason-expand-btn" onclick="togglePanel('${pid}',this)" aria-expanded="false">
+                Why? <span class="outage-chevron">▼</span>
+              </button>
+              <div class="reason-panel" id="${pid}">
+                <div class="reason-text">${pReason}</div>
+              </div>
+            </div>
+          </td>`;
+      } else {
+        pressureCell = `<td class="rp-td rp-td-center"><span class="badge badge-warn">Low</span></td>`;
+      }
+    } else {
+      pressureCell = `<td class="rp-td rp-td-center"><span class="badge badge-ok">Normal</span></td>`;
+    }
+
+    // ── Dirty water photo thumbnail ──
+    let photoCell = '<td class="rp-td rp-td-center">—</td>';
+    if (r.water_dirty_image && r.water_dirty_image.trim()) {
+      const src = r.water_dirty_image.startsWith('data:')
+        ? r.water_dirty_image
+        : 'data:image/jpeg;base64,' + r.water_dirty_image;
+      photoCell = `
+        <td class="rp-td rp-td-center">
+          <img class="water-thumb" src="${src}" alt="Water sample" onclick="openLightbox('${src}')"/>
+        </td>`;
+    }
+
     tbody += `<tr class="rp-tr">
       <td class="rp-td rp-td-date">${formatDateShort(r.date)}</td>
       ${garbageCell}
@@ -951,6 +1038,8 @@ function renderReport(rows, start, end) {
           ? '<span class="badge badge-bad">Dirty</span>'
           : '<span class="badge badge-ok">Clear</span>'}
       </td>
+      ${pressureCell}
+      ${photoCell}
       <td class="rp-td rp-td-center">
         ${!r.aq_aqi || parseInt(r.aq_aqi) === 0
           ? '<span class="badge badge-info">—</span>'
@@ -994,6 +1083,10 @@ function renderReport(rows, start, end) {
       <td class="rp-td rp-td-center">
         <span class="badge ${dirtyDays > 0 ? 'badge-bad' : 'badge-ok'}">${dirtyDays} day(s)</span>
       </td>
+      <td class="rp-td rp-td-center">
+        <span class="badge ${lowPressureDays > 0 ? 'badge-warn' : 'badge-ok'}">${lowPressureDays} day(s)</span>
+      </td>
+      <td class="rp-td rp-td-center">—</td>
       <td class="rp-td rp-td-center">
         ${avgAQI !== null
           ? `<span class="badge ${avgAQI <= 50 ? 'badge-ok' : avgAQI <= 100 ? 'badge-warn' : 'badge-bad'}">${avgAQI} avg</span>`
@@ -1049,6 +1142,15 @@ function togglePanel(id, btn) {
   btn.setAttribute('aria-expanded', open);
 }
 
+// ── Image lightbox (water sample photos) ──
+function openLightbox(src) {
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('img-lightbox').classList.add('visible');
+}
+function closeLightbox() {
+  document.getElementById('img-lightbox').classList.remove('visible');
+}
+
 // ── URL params (shareable links) ──
 function handleURLParams() {
   const params = new URLSearchParams(window.location.search);
@@ -1090,6 +1192,12 @@ function formatDateShort(d) {
   return `${days[dt.getDay()]}<br><span style="font-size:0.8em;color:var(--muted);font-weight:400">${parseInt(day)} ${months[m-1]}</span>`;
 }
 </script>
+
+<!-- Image lightbox -->
+<div class="img-lightbox" id="img-lightbox" onclick="closeLightbox()">
+  <button class="img-lightbox-close" onclick="event.stopPropagation();closeLightbox()">✕</button>
+  <img id="lightbox-img" src="" alt="Water sample full view" onclick="event.stopPropagation()"/>
+</div>
 
 </body>
 </html>
