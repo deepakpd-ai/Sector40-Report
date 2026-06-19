@@ -888,7 +888,7 @@ function renderReport(rows, start, end) {
   let tbody = '';
   rows.forEach(r => {
     // DEBUG — remove after confirming reasons show correctly
-    console.log('Row', r.date, '| garbage:', r.garbage, '| garbage_reason:', r.garbage_reason, '| elec_slot_reasons:', r.elec_slot_reasons);
+    console.log('Row', r.date, '| garbage:', r.garbage, '| garbage_reason:', r.garbage_reason, '| elec_slot_reasons:', r.elec_slot_reasons, '| water_dirty_image length:', r.water_dirty_image ? r.water_dirty_image.length : 0, '| water_dirty_image starts:', r.water_dirty_image ? r.water_dirty_image.substring(0,30) : '(empty)');
 
     const tds = parseInt(r.water_tds) || 0;
     const hrs = parseFloat(r.elec_hours) || 0;
